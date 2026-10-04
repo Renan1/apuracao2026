@@ -80,7 +80,7 @@ export async function buscarCargo(local, cargo) {
     nulos: num(v.vn),
     candidatos,
   };
-  return process.env.SIMULA ? simular(saida) : saida;
+  return typeof process !== "undefined" && process.env?.SIMULA ? simular(saida) : saida;
 }
 
 // Só para testes locais (SIMULA=1): inventa votos e troca o líder a cada 10 s.
@@ -121,7 +121,7 @@ export async function nomeLocal({ uf, mun }) {
   return `${mun} - ${uf.toUpperCase()}`;
 }
 
-export const resposta = (corpo, status = 200, cache = "public, max-age=10", cdn = "public, s-maxage=25, stale-while-revalidate=30") =>
+export const resposta = (corpo, status = 200, cache = "public, max-age=10", cdn = "public, s-maxage=55, stale-while-revalidate=60") =>
   new Response(JSON.stringify(corpo), {
     status,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": cache, ...(cdn ? { "netlify-cdn-cache-control": cdn } : {}) },

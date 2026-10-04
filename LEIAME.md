@@ -13,6 +13,16 @@ GitHub Pages só serve páginas estáticas e não roda essas funções; o Netlif
    (Em *Site configuration → Change site name* você escolhe o endereço.)
 6. A partir daí, todo push no GitHub atualiza o site sozinho.
 
+## Segunda hospedagem: Cloudflare (grátis, em paralelo ao Netlify)
+O mesmo repositório também funciona na Cloudflare (`wrangler.jsonc` + `worker/index.mjs`).
+1. Crie uma conta grátis em https://dash.cloudflare.com.
+2. **Workers & Pages → Create → Import a repository** (ou "Connect to Git") e escolha `Renan1/apuracao2026`.
+3. Deixe o nome `apuracao2026`; comando de build vazio; comando de deploy `npx wrangler deploy` (já é o padrão).
+4. Em ~1 minuto o site fica em `https://apuracao2026.<seu-usuario>.workers.dev`.
+5. Todo push no GitHub atualiza o Netlify e a Cloudflare juntos.
+Observação: o plano grátis da Cloudflare limita o tempo de processamento por visita; o Worker guarda a resposta
+por ~55 s para ficar bem abaixo disso.
+
 ## Instalar no celular (ícone na tela inicial)
 - **Android (Chrome):** menu ⋮ → *Instalar app*.
 - **iPhone (Safari):** compartilhar → *Adicionar à Tela de Início*.
@@ -23,7 +33,7 @@ GitHub Pages só serve páginas estáticas e não roda essas funções; o Netlif
 - **Eleitos:** lista de quem o TSE já marcou como eleito em cada cargo (Presidente, Governador, Senador, Deputados), por estado, com a bancada por partido.
 - **Avisos 🔔:** avisa na hora quando muda o líder de Presidente, Governador ou Senador (Brasil e favoritos).
   Para deputados, manda um resumo a cada 10 minutos (`RESUMO_MIN` em `public/app.js`). Funciona com o site aberto.
-- Atualização: a cada 60 s antes das 17h (Brasília) e a cada 30 s depois.
+- Atualização: a cada 60 s (`intervalo()` em `public/app.js`).
 
 ## Testar no computador
 - `node dev.mjs` → http://localhost:8888 (dados reais do TSE)

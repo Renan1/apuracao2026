@@ -44,11 +44,8 @@ let expDados = null, expErro = false, munCache = {};
 let elei = ler("elei", { uf: "mg" }), eleiDados = null, eleiAbertos = new Set(["1", "3", "5"]);
 let ultimoResumo = ler("ultimoResumo", 0), lideresResumo = ler("lideresResumo", {});
 
-// ---------- horário: antes das 17h (Brasília) a cada 60 s; depois, a cada 30 s ----------
-function intervalo() {
-  const h = Number(new Intl.DateTimeFormat("pt-BR", { hour: "numeric", hour12: false, timeZone: "America/Sao_Paulo" }).format(new Date()));
-  return h >= 17 ? 30 : 60;
-}
+// ---------- atualização: a cada 60 segundos (economiza o limite de uso da hospedagem) ----------
+const intervalo = () => 60;
 
 // ---------- navegação ----------
 $("tabs").innerHTML = ABAS.map((a) => `<button role="tab" data-id="${a.id}">${a.nome}</button>`).join("");
