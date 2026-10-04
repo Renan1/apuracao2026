@@ -25,6 +25,10 @@ const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } 
 const ler = (k, pad) => { try { return JSON.parse(localStorage.getItem(k)) ?? pad; } catch { return pad; } };
 const ufDe = (id) => id.split(":")[0];
 
+// Nome curto para legenda: tira títulos (Professor, Dr., Juiz...) e fica com a primeira palavra.
+const TITULOS = /^(prof\.?|professor|professora|dr\.?|dra\.?|escritor|juiz|juíz|cabo|sargento|sgt\.?|pastor|pastora|delegado|delegada|coronel|veterinário|capitão|major|doutor|doutora)$/i;
+const primeiroNome = (n) => { const p = n.split(" ").filter(Boolean); while (p.length > 1 && TITULOS.test(p[0])) p.shift(); return p[0]; };
+
 // Foto oficial do candidato (hospedada pelo TSE). Presidente fica na pasta "br"; os demais, na do estado.
 const SEM_FOTO = "this.onerror=null;this.src='/icons/sem-foto.svg'";
 const foto = (cargo, uf, sq, cls = "") =>
@@ -66,7 +70,7 @@ async function atualizar() {
   buscando = true;
   const ids = ["br", ...favoritos.map((f) => f.id)];
   try {
-    const j = await api(`/api/painel?locais=${encodeURIComponent(ids.join(","))}&top=4`);
+    const j = await api(`/api/painel?locais=${encodeURIComponent(ids.join(","))}&top=12`);
     for (const l of j.locais) {
       const cargos = {};
       for (const c of l.cargos) if (!c.erro) { cargos[c.cargo] = c; verificarLideranca(l, c); }
@@ -219,7 +223,7 @@ function inicio() {
       <div class="meta"><span><b>${String(br.secoes.pct).replace(".", ",")}%</b> das seções apuradas</span><span>${fmt(br.secoes.apuradas)} de ${fmt(br.secoes.total)}</span></div>
       ${barra(br.secoes.pct)}
       ${br.top[0]?.votos > 0 ? "" : '<div class="aviso">A apuração ainda não começou. Os candidatos aparecem abaixo.</div>'}
-    </div>${linhasTop(br, 4, "br")}`;
+    </div>${linhasTop(br, 12, "br")}`;
   } else h += '<div class="msg">Carregando…</div>';
 
   h += `<h2 class="sec">⭐ Favoritos <small>quem está na frente em cada lugar</small></h2>`;
@@ -248,7 +252,8 @@ function inicio() {
         <div class="lc">${CARGO[cg]}<span>${String(c.secoes.pct).replace(".", ",")}% das seções apuradas</span></div>
         ${tem ? tops.map((x) => `<div class="lq">${foto(cg, ufDe(f.id), x.sq, "peq")}<span class="nm">${esc(x.nome)} <em>${esc(x.partido)}</em></span><span class="vt">${pct(x.pct)}<small>${fmt(x.votos)} votos</small></span></div>`).join("") +
           (seg ? `<div class="seg">2º: ${esc(seg.nome)} · ${fmt(seg.votos)}</div>` : "")
-          : `<div class="lq sem">aguardando apuração</div>`}
+          : DEPUTADOS.includes(cg) ? `<div class="lq sem">aguardando apuração</div>`
+          : `<div class="lq sem">aguardando apuração</div><div class="pre">${c.top.slice(0, 6).map((x) => `<span>${foto(cg, ufDe(f.id), x.sq, "peq")}${esc(primeiroNome(x.nome))}</span>`).join("")}</div>`}
       </button>`;
     }
     h += `</div>`;

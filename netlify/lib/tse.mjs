@@ -12,7 +12,10 @@ export const UFS = {
 // Presidente fica na eleição federal (6257); os demais cargos, na estadual (6259).
 const eleDe = (cargo) => (String(cargo) === "1" ? "6257" : "6259");
 
-export const num = (s) => Number(String(s ?? "0").replace(/\./g, "").replace(",", ".")) || 0;
+// Números dos partidos, do mais ao menos "em destaque" (13 PT, 22 PL, 55 PSD, 30 NOVO, 14 MISSÃO, 15 MDB...)
+const PARTIDOS_PRIMEIRO = ["13", "22", "55", "30", "14", "15", "45", "44", "11", "10", "12", "40", "50", "20", "25", "70", "36", "77"];
+
+export const num =(s) => Number(String(s ?? "0").replace(/\./g, "").replace(",", ".")) || 0;
 
 export function cargosDe(uf) {
   if (uf === "br") return ["1"];
@@ -60,7 +63,9 @@ export async function buscarCargo(local, cargo) {
       }
     }
   }
-  candidatos.sort((a, b) => b.votos - a.votos || a.nome.localeCompare(b.nome, "pt-BR"));
+  // Desempate (principalmente antes da apuração, com todos em zero): partidos maiores primeiro, depois ordem alfabética.
+  const prio = (c) => { const i = PARTIDOS_PRIMEIRO.indexOf(String(c.n).slice(0, 2)); return i < 0 ? 99 : i; };
+  candidatos.sort((a, b) => b.votos - a.votos || prio(a) - prio(b) || a.nome.localeCompare(b.nome, "pt-BR"));
 
   const s = raw.s || {}, e = raw.e || {}, v = raw.v || {};
   const saida = {
