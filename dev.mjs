@@ -4,7 +4,8 @@
 import http from "node:http"; import fs from "node:fs"; import path from "node:path";
 import resultados from "./netlify/functions/resultados.mjs"; import painel from "./netlify/functions/painel.mjs";
 import municipios from "./netlify/functions/municipios.mjs"; import noticias from "./netlify/functions/noticias.mjs";
-const rotas = { "/api/resultados": resultados, "/api/painel": painel, "/api/municipios": municipios, "/api/noticias": noticias };
+import desempenho from "./netlify/functions/desempenho.mjs";
+const rotas = { "/api/desempenho": desempenho, "/api/resultados": resultados, "/api/painel": painel, "/api/municipios": municipios, "/api/noticias": noticias };
 const tipos = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json" };
 
 http.createServer(async (req, res) => {

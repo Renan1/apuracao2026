@@ -3,8 +3,9 @@ import resultados from "../netlify/functions/resultados.mjs";
 import painel from "../netlify/functions/painel.mjs";
 import municipios from "../netlify/functions/municipios.mjs";
 import noticias from "../netlify/functions/noticias.mjs";
+import desempenho from "../netlify/functions/desempenho.mjs";
 
-const rotas = { "/api/resultados": resultados, "/api/painel": painel, "/api/municipios": municipios, "/api/noticias": noticias };
+const rotas = { "/api/desempenho": desempenho, "/api/resultados": resultados, "/api/painel": painel, "/api/municipios": municipios, "/api/noticias": noticias };
 const TTL_MS = 55_000;
 const memoria = new Map(); // cache em memória do Worker: evita recalcular (e gastar CPU) a cada visitante
 

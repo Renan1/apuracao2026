@@ -137,3 +137,15 @@ details.sec-el .ct{margin-left:auto;font-size:12px;font-weight:600;color:var(--m
 .pre{display:flex;gap:8px 10px;flex-wrap:wrap;margin-top:8px}
 .pre span{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--mut);width:56px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pre .foto{width:40px;height:40px}
+
+.est{border:0;background:transparent;color:#c9a400;font-size:19px;line-height:1;padding:0 2px 0 8px;cursor:pointer;vertical-align:-2px}
+.est.on{color:#e6a700}
+.dica{font-size:13px;color:var(--mut);background:var(--soft);border-radius:12px;padding:10px 12px;margin:14px 0 4px}
+.candfav .fh{background:#fff8dc}
+.candfav .ch{flex:1;min-width:0}
+.candfav .ch h3{margin:0;font-size:16px}
+.candfav .ch .ap{display:block;font-size:12px;color:var(--mut);font-weight:600}
+.dl{display:flex;justify-content:space-between;gap:10px;padding:9px 14px;border-top:1px solid var(--bd);font-size:14px}
+.dl .lugar{color:var(--mut);font-weight:700;flex:none;max-width:42%}
+.dl .dv{text-align:right}
+.dl .pos2{color:var(--pri);font-weight:700}

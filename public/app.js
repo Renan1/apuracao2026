@@ -43,6 +43,15 @@ let exp = ler("exp", { uf: "mg", mun: "", munNome: "", cargo: "6" });
 let expDados = null, expErro = false, munCache = {};
 let elei = ler("elei", { uf: "mg" }), eleiDados = null, eleiAbertos = new Set(["1", "3", "5"]);
 let ultimoResumo = ler("ultimoResumo", 0), lideresResumo = ler("lideresResumo", {});
+let candFav = ler("candFav", []);   // candidatos favoritos: { cargo, uf, sq, nome, partido, n }
+let desemp = {};                    // desemp[sq][idLocal] = { votos, pct, pos, de, apurado }
+const catalogo = {};                // sq -> candidato (usado pelo botão ☆)
+const ehCandFav = (sq) => candFav.some((c) => c.sq === sq);
+const estrela = (cargo, uf, x) => {
+  catalogo[x.sq] = { cargo, uf: cargo === "1" ? "br" : uf, sq: x.sq, nome: x.nome, partido: x.partido, n: x.n };
+  const on = ehCandFav(x.sq);
+  return `<button class="est${on ? " on" : ""}" data-cf="${x.sq}" title="${on ? "Remover dos candidatos favoritos" : "Acompanhar este candidato"}">${on ? "★" : "☆"}</button>`;
+};
 
 // ---------- atualização: a cada 60 segundos (economiza o limite de uso da hospedagem) ----------
 const intervalo = () => 60;
@@ -76,11 +85,19 @@ async function atualizar() {
     ultimaOk = new Date();
   } catch {}
   resumoDeputados();
+  await carregarDesempenho();
   if (aba === "explorar") await carregarExplorar(true);
   if (aba === "eleitos") await carregarEleitos(true);
   buscando = false;
   restante = intervalo();
   desenhar();
+}
+
+async function carregarDesempenho() {
+  if (!candFav.length) return;
+  const locais = ["br", ...favoritos.map((f) => f.id)].join(",");
+  const cands = candFav.map((c) => `${c.cargo}~${c.sq}~${c.uf}`).join(",");
+  try { desemp = (await api(`/api/desempenho?locais=${encodeURIComponent(locais)}&cands=${encodeURIComponent(cands)}`)).itens; } catch {}
 }
 
 async function carregarExplorar(silencioso) {
@@ -207,9 +224,31 @@ function linhasTop(c, n, uf) {
     <div class="cand compacto${x.eleito ? " eleito" : ""}${i === 0 && x.votos > 0 ? " lider1" : ""}">
       <i class="fill" style="width:${Math.round((x.votos / maior) * 100)}%"></i>
       ${foto(c.cargo, uf, x.sq)}
-      <div><div class="nome">${esc(x.nome)}${x.eleito ? '<span class="tag">ELEITO</span>' : ""}</div><div class="sub"><b>${esc(x.n)}</b> · ${esc(x.partido)}</div></div>
+      <div><div class="nome">${esc(x.nome)}${x.eleito ? '<span class="tag">ELEITO</span>' : ""}${estrela(c.cargo, uf, x)}</div><div class="sub"><b>${esc(x.n)}</b> · ${esc(x.partido)}</div></div>
       <div class="votos">${pct(x.pct)}<small>${fmt(x.votos)} votos</small></div>
     </div>`).join("");
+}
+
+// Seção "Candidatos favoritos": o desempenho de cada um em cada local favorito (e no Brasil, para Presidente).
+function candidatosFavoritos() {
+  if (!candFav.length) return '<div class="dica">Toque em ☆ ao lado do nome de um candidato (aqui ou na aba <b>Explorar</b>) para acompanhar o desempenho dele nos seus favoritos.</div>';
+  const ids = ["br", ...favoritos.map((f) => f.id)];
+  let h = '<h2 class="sec">👤 Candidatos favoritos <small>desempenho em cada lugar</small></h2>';
+  for (const c of candFav) {
+    const linhas = ids.filter((id) => c.cargo === "1" || ufDe(id) === c.uf).map((id) => {
+      const r = desemp[c.sq]?.[id];
+      const nome = id === "br" ? "Brasil" : painel[id]?.nome || favoritos.find((f) => f.id === id)?.nome || id;
+      const val = !r ? "…" : r.votos > 0 || r.eleito
+        ? `<b>${pct(r.pct)}</b> · ${fmt(r.votos)} votos · <span class="pos2">${r.pos}º de ${fmt(r.de)}</span>${r.eleito ? '<span class="tag">ELEITO</span>' : ""}`
+        : `aguardando apuração · <span class="pos2">${r.pos}º de ${fmt(r.de)}</span>`;
+      return `<div class="dl"><span class="lugar">${esc(nome)}</span><span class="dv">${val}</span></div>`;
+    }).join("");
+    h += `<div class="fav candfav"><div class="fh">${foto(c.cargo, c.uf, c.sq, "peq")}
+      <div class="ch"><h3>${esc(c.nome)}</h3><span class="ap">${esc(c.partido)} · ${esc(c.n)} · ${CARGO[c.cargo]}</span></div>
+      <button class="x" data-cf="${esc(c.sq)}" title="Remover dos candidatos favoritos">✕</button></div>
+      ${linhas || '<div class="msg">Este candidato não concorre nos locais favoritos.</div>'}</div>`;
+  }
+  return h;
 }
 
 function inicio() {
@@ -223,6 +262,7 @@ function inicio() {
     </div>${linhasTop(br, 12, "br")}`;
   } else h += '<div class="msg">Carregando…</div>';
 
+  h += candidatosFavoritos();
   h += `<h2 class="sec">⭐ Favoritos <small>quem está na frente em cada lugar</small></h2>`;
   if (!favoritos.length) h += '<div class="msg">Nenhum favorito. Use a aba <b>Explorar</b> e toque em ☆ para adicionar.</div>';
 
@@ -305,7 +345,7 @@ function rank() {
     <div class="cand${c.eleito ? " eleito" : ""}${c.pos === 1 && c.votos > 0 ? " lider1" : ""}">
       <i class="fill" style="width:${Math.round((c.votos / maior) * 100)}%"></i>
       ${foto(exp.cargo, exp.uf, c.sq)}
-      <div><div class="nome">${esc(c.nome)}${c.eleito ? '<span class="tag">ELEITO</span>' : ""}</div>
+      <div><div class="nome">${esc(c.nome)}${c.eleito ? '<span class="tag">ELEITO</span>' : ""}${estrela(exp.cargo, exp.uf, c)}</div>
       <div class="sub"><b>${esc(c.n)}</b> · ${esc(c.partido)}${c.vice.length ? " · Vice/Supl.: " + esc(c.vice.join(", ")) : ""}</div></div>
       <div class="votos">${pct(c.pct)}<small>${fmt(c.votos)} votos</small></div>
     </div>`).join("") || '<div class="msg">Nenhum candidato encontrado.</div>';
@@ -395,6 +435,16 @@ $("view").addEventListener("click", (e) => {
   if (chip) {
     const m = (munCache[exp.uf] || []).find((x) => x.cd === chip.dataset.chip);
     exp.mun = chip.dataset.chip; exp.munNome = m ? titulo(m.nome) : ""; guardar("exp", exp); expDados = null; limite = PASSO; carregarExplorar(); desenhar(); return;
+  }
+  const cf = e.target.closest("[data-cf]");
+  if (cf) {
+    const sq = cf.dataset.cf;
+    if (ehCandFav(sq)) candFav = candFav.filter((c) => c.sq !== sq);
+    else if (catalogo[sq]) candFav.push(catalogo[sq]);
+    guardar("candFav", candFav);
+    desenhar();
+    carregarDesempenho().then(desenhar);
+    return;
   }
   if (e.target.id === "fav") return alternarFavorito(idExp(), nomeExp());
   if (e.target.id === "mais") { limite += PASSO; rank(); }
