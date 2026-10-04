@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apuração 2026</title>
+<meta name="description" content="Acompanhe em tempo real a apuração das eleições 2026 no Brasil, em Minas Gerais, Juiz de Fora e Argirita.">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Apuração 2026">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="top">
+    <img src="/icons/icon-192.png" alt="" class="logo">
+    <div class="ttl"><h1>Apuração 2026</h1><p>Brasil · seus favoritos</p></div>
+    <button id="avisos" class="bell" aria-pressed="false" title="Avisos de mudança de liderança">🔕<span>Avisos</span></button>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+</header>
+
+<main id="view"></main>
+
+<footer>
+  <div id="status"></div>
+  <div>Dados oficiais do TSE · atualização automática</div>
+</footer>
+
+<div id="toasts" aria-live="polite"></div>
+<script src="/app.js"></script>
+</body>
+</html>
