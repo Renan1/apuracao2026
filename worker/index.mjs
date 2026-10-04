@@ -6,7 +6,8 @@ import noticias from "../netlify/functions/noticias.mjs";
 import desempenho from "../netlify/functions/desempenho.mjs";
 
 const rotas = { "/api/desempenho": desempenho, "/api/resultados": resultados, "/api/painel": painel, "/api/municipios": municipios, "/api/noticias": noticias };
-const TTL_MS = 55_000;
+import { ttlSeg } from "../netlify/lib/tse.mjs";
+const TTL_MS = () => ttlSeg() * 1000; // 10 min antes das 16:59 (sem votos ainda); 55 s depois
 const memoria = new Map(); // cache em memória do Worker: evita recalcular (e gastar CPU) a cada visitante
 
 export default {
@@ -19,7 +20,7 @@ export default {
     const chave = url.pathname + url.search;
     const agora = Date.now();
     const m = memoria.get(chave);
-    if (m && agora - m.t < TTL_MS) return resposta(m);
+    if (m && agora - m.t < TTL_MS()) return resposta(m);
 
     // Cache da Cloudflare (funciona em domínios próprios; em *.workers.dev pode ser ignorado, sem problema)
     const cache = caches.default;
@@ -44,4 +45,4 @@ export default {
 };
 
 const resposta = (m) =>
-  new Response(m.corpo, { status: m.status, headers: { "content-type": m.tipo, "cache-control": "public, max-age=10, s-maxage=55" } });
+  new Response(m.corpo, { status: m.status, headers: { "content-type": m.tipo, "cache-control": `public, max-age=10, s-maxage=${ttlSeg()}` } });

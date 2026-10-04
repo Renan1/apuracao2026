@@ -130,7 +130,13 @@ export async function nomeLocal({ uf, mun }) {
   return `${mun} - ${uf.toUpperCase()}`;
 }
 
-export const resposta = (corpo, status = 200, cache = "public, max-age=10", cdn = "public, s-maxage=55, stale-while-revalidate=60") =>
+// Antes das 16:59 (Brasília) de 04/10/2026 ainda não há votos: o cache do servidor dura bem mais.
+export const ABERTURA = Date.parse("2026-10-04T16:59:00-03:00");
+// (o cache nunca passa das 16:59, para a primeira leitura da apuração já vir fresca)
+export const ttlSeg = () => (Date.now() < ABERTURA ? Math.max(1, Math.min(600, Math.floor((ABERTURA - Date.now()) / 1000))) : 55);
+const cdnPadrao = () => (Date.now() < ABERTURA ? `public, s-maxage=${ttlSeg()}` : "public, s-maxage=55, stale-while-revalidate=60");
+
+export const resposta = (corpo, status = 200, cache = "public, max-age=10", cdn = cdnPadrao()) =>
   new Response(JSON.stringify(corpo), {
     status,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": cache, ...(cdn ? { "netlify-cdn-cache-control": cdn } : {}) },

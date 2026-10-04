@@ -478,14 +478,30 @@ $("view").addEventListener("input", (e) => {
 });
 
 // ---------- relógio ----------
+// A apuração começa às 17h (Brasília). Antes das 16:59 o site lê os dados uma vez ao abrir
+// (para mostrar os candidatos) e só passa a buscar sozinho a partir das 16:59, economizando requisições.
+const ABERTURA = Date.parse("2026-10-04T16:59:00-03:00");
+const aberta = () => Date.now() >= ABERTURA;
+const hms = (ms) => {
+  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return `${h ? h + "h " : ""}${String(m).padStart(2, "0")}min ${String(s % 60).padStart(2, "0")}s`;
+};
+let jaAbriu = aberta();
 setInterval(() => {
+  if (!aberta()) {
+    $("status").innerHTML = `⏳ Atualização automática a partir das 16:59 (faltam ${hms(ABERTURA - Date.now())})` +
+      (ultimaOk ? ` · última leitura ${ultimaOk.toLocaleTimeString("pt-BR")}` : "") + ' · <a href="#" id="agora">atualizar agora</a>';
+    return;
+  }
+  if (!jaAbriu) { jaAbriu = true; restante = 0; }
   restante = Math.max(0, restante - 1);
   $("status").innerHTML = ultimaOk
     ? `<b>●</b> Atualizado às ${ultimaOk.toLocaleTimeString("pt-BR")} · próxima em ${restante}s`
     : "Conectando ao TSE…";
   if (restante === 0 && !buscando) atualizar();
 }, 1000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizar(); });
+$("status").addEventListener("click", (e) => { if (e.target.id === "agora") { e.preventDefault(); atualizar(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && (aberta() || !ultimaOk)) atualizar(); });
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 pintarSino();
