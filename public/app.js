@@ -11,7 +11,10 @@ const FAV_PADRAO = [
   { id: "mg:47333", nome: "Juiz de Fora - MG" },
   { id: "mg:40878", nome: "Argirita - MG" },
 ];
-const ABAS = [{ id: "inicio", nome: "Início" }, { id: "explorar", nome: "Explorar" }, { id: "news", nome: "Notícias" }];
+const ABAS = [{ id: "inicio", nome: "Início" }, { id: "eleitos", nome: "Eleitos" }, { id: "explorar", nome: "Explorar" }, { id: "news", nome: "Notícias" }];
+const DEPUTADOS = ["6", "7", "8"];
+const RESUMO_MIN = 10; // deputados: um resumo a cada 10 minutos, em vez de aviso a cada mudança
+const sa = (s) => String(s ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase(); // sem acento e minúsculo
 const PASSO = 30;
 
 const $ = (id) => document.getElementById(id);
@@ -34,6 +37,8 @@ let lideresAnt = ler("lideres2", {});
 let painel = {};                      // painel[idLocal] = { nome, cargos: {1: {...}} }
 let exp = ler("exp", { uf: "mg", mun: "", munNome: "", cargo: "6" });
 let expDados = null, expErro = false, munCache = {};
+let elei = ler("elei", { uf: "mg" }), eleiDados = null, eleiAbertos = new Set(["1", "3", "5"]);
+let ultimoResumo = ler("ultimoResumo", 0), lideresResumo = ler("lideresResumo", {});
 
 // ---------- horário: antes das 17h (Brasília) a cada 60 s; depois, a cada 30 s ----------
 function intervalo() {
@@ -49,6 +54,7 @@ function irPara(id) {
   document.querySelectorAll("#tabs button").forEach((x) => x.setAttribute("aria-selected", x.dataset.id === id));
   window.scrollTo(0, 0);
   if (id === "explorar") carregarExplorar();
+  if (id === "eleitos") carregarEleitos();
   desenhar();
 }
 
@@ -68,7 +74,9 @@ async function atualizar() {
     }
     ultimaOk = new Date();
   } catch {}
+  resumoDeputados();
   if (aba === "explorar") await carregarExplorar(true);
+  if (aba === "eleitos") await carregarEleitos(true);
   buscando = false;
   restante = intervalo();
   desenhar();
@@ -101,12 +109,35 @@ function verificarLideranca(local, c) {
   const novo = top.map(idDe), ant = lideresAnt[chave];
   lideresAnt[chave] = novo;
   guardar("lideres2", lideresAnt);
+  if (DEPUTADOS.includes(c.cargo)) return; // deputados mudam muito: entram no resumo periódico
   if (!ant || ant.join() === novo.join()) return;
   const titulo = `🔔 ${CARGO[c.cargo]} · ${local.nome}`;
   const texto = top.length === 1
     ? `${top[0].nome} (${top[0].partido}) assumiu a liderança com ${fmt(top[0].votos)} votos, passando ${ant[0].split("|")[1]}.`
     : `Mudança entre os líderes: ${top.map((x) => `${x.nome} (${fmt(x.votos)})`).join(" e ")}.`;
   avisar(titulo, texto);
+}
+
+// A cada RESUMO_MIN minutos, um único aviso com o líder de cada cargo de deputado nos favoritos.
+function resumoDeputados() {
+  if (!avisos || Date.now() - ultimoResumo < RESUMO_MIN * 60e3) return;
+  const linhas = [];
+  for (const f of favoritos) {
+    const partes = [];
+    for (const cg of DEPUTADOS) {
+      const c = painel[f.id]?.cargos[cg];
+      const l = c?.top[0];
+      if (!l || l.votos <= 0) continue;
+      const mudou = lideresResumo[`${f.id}:${cg}`] && lideresResumo[`${f.id}:${cg}`] !== idDe(l);
+      lideresResumo[`${f.id}:${cg}`] = idDe(l);
+      partes.push(`${cg === "6" ? "Fed" : cg === "7" ? "Est" : "Dist"}: ${l.nome} (${fmt(l.votos)})${mudou ? " ↺" : ""}`);
+    }
+    if (partes.length) linhas.push(`${painel[f.id].nome} → ${partes.join(" · ")}`);
+  }
+  if (!linhas.length) return; // apuração ainda não começou
+  ultimoResumo = Date.now();
+  guardar("ultimoResumo", ultimoResumo); guardar("lideresResumo", lideresResumo);
+  avisar("📊 Deputados · atualização", linhas.join("\n") + "\n↺ = mudou de líder desde o último resumo");
 }
 
 function avisar(titulo, texto) {
@@ -264,10 +295,10 @@ function explorar() {
 
 let buscaTxt = "";
 function rank() {
-  const d = expDados, t = buscaTxt.trim().toLowerCase();
+  const d = expDados, t = sa(buscaTxt.trim());
   const maior = d.candidatos[0]?.votos || 1;
   const lista = d.candidatos.map((c, i) => ({ ...c, pos: i + 1 }))
-    .filter((c) => !t || c.nome.toLowerCase().includes(t) || String(c.n).startsWith(t) || c.partido.toLowerCase().includes(t));
+    .filter((c) => !t || sa(c.nome).includes(t) || String(c.n).startsWith(t) || sa(c.partido).includes(t));
   $("rank").innerHTML = lista.slice(0, limite).map((c) => `
     <div class="cand${c.eleito ? " eleito" : ""}${c.pos === 1 && c.votos > 0 ? " lider1" : ""}">
       <i class="fill" style="width:${Math.round((c.votos / maior) * 100)}%"></i>
@@ -292,9 +323,57 @@ async function noticias() {
   } catch { $("view").innerHTML = '<div class="msg warn">Não foi possível carregar as notícias.</div>'; }
 }
 
+// ---------- aba Eleitos: quem o TSE já marcou como eleito, em todos os cargos ----------
+async function carregarEleitos(silencioso) {
+  const pedidos = [["1", "br"], ...cargosDe(elei.uf).filter((c) => c !== "1").map((c) => [c, elei.uf])];
+  const res = await Promise.allSettled(pedidos.map(([c, loc]) => api(`/api/resultados?local=${loc}&cargo=${c}`)));
+  const novo = {};
+  res.forEach((r, i) => { novo[pedidos[i][0]] = r.status === "fulfilled" ? r.value : null; });
+  eleiDados = novo;
+  if (!silencioso) desenhar();
+}
+
+function eleitos() {
+  let h = `<div class="box filtros"><label>Estado
+    <select id="fEleiUf">${Object.entries(UFS).map(([k, v]) => `<option value="${k}"${elei.uf === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
+    <div class="meta">Lista oficial do TSE: só entra quem o TSE já marcou como eleito. Atualiza sozinha conforme a apuração.</div></div>`;
+  if (!eleiDados) return ($("view").innerHTML = h + '<div class="msg">Carregando…</div>');
+
+  for (const cg of cargosDe(elei.uf)) {
+    const d = eleiDados[cg], uf = cg === "1" ? "br" : elei.uf;
+    const titulo_ = `${CARGO[cg]}${cg === "1" ? " · Brasil" : ""}`;
+    if (!d) { h += `<details class="sec-el"><summary>${titulo_} <span class="ct">indisponível</span></summary></details>`; continue; }
+    const eleitosL = d.candidatos.filter((c) => c.eleito);
+    const aberto = eleiAbertos.has(cg) ? " open" : "";
+    let corpo;
+    if (eleitosL.length) {
+      corpo = eleitosL.map((c) => `
+        <div class="cand eleito compacto">
+          ${foto(cg, uf, c.sq)}
+          <div><div class="nome">${esc(c.nome)}<span class="tag">${esc((c.situacao || "ELEITO").toUpperCase())}</span></div><div class="sub"><b>${esc(c.n)}</b> · ${esc(c.partido)}</div></div>
+          <div class="votos">${pct(c.pct)}<small>${fmt(c.votos)} votos</small></div>
+        </div>`).join("");
+      if (DEPUTADOS.includes(cg)) {
+        const por = {};
+        for (const c of eleitosL) por[c.partido] = (por[c.partido] || 0) + 1;
+        corpo = `<div class="chips banc">${Object.entries(por).sort((a, b) => b[1] - a[1]).map(([p, n]) => `<span>${esc(p)} <b>${n}</b></span>`).join("")}</div>` + corpo;
+      }
+    } else {
+      const l = d.candidatos[0];
+      corpo = l && l.votos > 0 && !DEPUTADOS.includes(cg)
+        ? `<div class="msg">Nenhum eleito definido ainda.<br>Na frente: <b>${esc(l.nome)}</b> (${esc(l.partido)}) · ${pct(l.pct)} · ${fmt(l.votos)} votos</div>`
+        : `<div class="msg">Nenhum eleito definido ainda.</div>`;
+    }
+    h += `<details class="sec-el" data-c="${cg}"${aberto}><summary>${titulo_}
+      <span class="ct">${eleitosL.length} de ${d.vagas} · ${String(d.secoes.pct).replace(".", ",")}% apurado</span></summary>${corpo}</details>`;
+  }
+  $("view").innerHTML = h;
+}
+
 function desenhar() {
   const foco = document.activeElement?.id;
   if (aba === "inicio") inicio();
+  else if (aba === "eleitos") eleitos();
   else if (aba === "explorar") { explorar(); if (foco === "busca" || foco === "fMun") { const e = $(foco); e?.focus(); try { e.setSelectionRange(e.value.length, e.value.length); } catch {} } }
   else if (aba === "news" && !$("view").querySelector(".news")) noticias();
 }
@@ -323,17 +402,24 @@ $("view").addEventListener("change", (e) => {
   if (e.target.id === "fUf") {
     exp = { uf: e.target.value, mun: "", munNome: "", cargo: e.target.value === "br" ? "1" : exp.cargo }; guardar("exp", exp);
     expDados = null; limite = PASSO; carregarMunicipios(exp.uf); carregarExplorar(); desenhar();
+  } else if (e.target.id === "fEleiUf") {
+    elei.uf = e.target.value; guardar("elei", elei); eleiDados = null; carregarEleitos(); desenhar();
   } else if (e.target.id === "fCargo") {
     exp.cargo = e.target.value; guardar("exp", exp); expDados = null; limite = PASSO; carregarExplorar(); desenhar();
   } else if (e.target.id === "fMun") {
-    const v = e.target.value.trim().toLowerCase();
-    const m = (munCache[exp.uf] || []).find((x) => titulo(x.nome).toLowerCase() === v || x.nome.toLowerCase() === v);
+    const v = sa(e.target.value.trim());
+    const m = (munCache[exp.uf] || []).find((x) => sa(x.nome) === v);
     if (m) exp.mun = m.cd, exp.munNome = titulo(m.nome);
     else if (!v) exp.mun = "", exp.munNome = "";
     else return;
     guardar("exp", exp); expDados = null; limite = PASSO; carregarExplorar(); desenhar();
   }
 });
+
+$("view").addEventListener("toggle", (e) => {
+  const c = e.target.dataset?.c;
+  if (c) e.target.open ? eleiAbertos.add(c) : eleiAbertos.delete(c);
+}, true);
 
 $("view").addEventListener("input", (e) => {
   if (e.target.id === "busca") { buscaTxt = e.target.value; limite = PASSO; rank(); }

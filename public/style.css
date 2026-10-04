@@ -123,3 +123,13 @@ h2.sec:first-child{margin-top:4px}
 .lq .vt small{display:block}
 .lc{display:flex;justify-content:space-between;gap:8px}
 .lc span{text-transform:none;letter-spacing:0;font-weight:600;color:var(--mut)}
+
+.toast{white-space:pre-line}
+details.sec-el{border:1px solid var(--bd);border-radius:16px;margin-bottom:10px;padding:0 12px 4px;box-shadow:0 1px 3px rgba(20,40,30,.05)}
+details.sec-el summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:800;display:flex;justify-content:space-between;gap:8px;align-items:center}
+details.sec-el summary::-webkit-details-marker{display:none}
+details.sec-el summary::after{content:"▾";color:var(--mut);margin-left:4px}
+details.sec-el[open] summary::after{content:"▴"}
+details.sec-el .ct{margin-left:auto;font-size:12px;font-weight:600;color:var(--mut)}
+.chips.banc{margin:0 0 10px}
+.chips.banc span{background:var(--pri-l);color:var(--pri);border-radius:14px;padding:4px 10px;font-size:13px;font-weight:600}

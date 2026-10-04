@@ -53,7 +53,8 @@ export async function buscarCargo(local, cargo) {
           partido: par.sg,
           votos: num(c.vap),
           pct: num(c.pvap),
-          eleito: c.e === "s",
+          eleito: c.e === "s" || /^eleito/i.test(c.st || ""),
+          situacao: c.st || "",
           vice: (c.vs || []).map((v) => v.nmu).filter(Boolean),
         });
       }
@@ -83,6 +84,7 @@ function simular(d) {
   d.candidatos.slice(0, 40).forEach((c, i) => { c.votos = 1000 - i * 10; c.pct = Number(((c.votos / 20000) * 100).toFixed(2)); });
   if (fase && d.candidatos.length > 1) { d.candidatos[0].votos = 985; d.candidatos[1].votos = 1005; }
   d.candidatos.sort((a, b) => b.votos - a.votos);
+  d.candidatos.forEach((c, i) => { c.eleito = d.vagas > 1 && i < Math.min(d.vagas, 12); c.situacao = c.eleito ? "Eleito por QP" : ""; });
   d.secoes.apuradas = Math.round(d.secoes.total * 0.3); d.secoes.pct = 30;
   d.votosValidos = 20000;
   return d;

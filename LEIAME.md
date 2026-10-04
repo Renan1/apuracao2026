@@ -20,7 +20,9 @@ GitHub Pages só serve páginas estáticas e não roda essas funções; o Netlif
 ## Como usar
 - **Início:** Presidente no Brasil + seus favoritos (padrão: Minas Gerais, Juiz de Fora e Argirita) com o líder de cada cargo.
 - **Explorar:** escolha Brasil ou um estado, depois a cidade (digite o nome) e o cargo. A estrela adiciona aos favoritos.
-- **Avisos 🔔:** avisa quando muda o líder da Presidência ou de qualquer cargo dos favoritos. Funciona com o site aberto.
+- **Eleitos:** lista de quem o TSE já marcou como eleito em cada cargo (Presidente, Governador, Senador, Deputados), por estado, com a bancada por partido.
+- **Avisos 🔔:** avisa na hora quando muda o líder de Presidente, Governador ou Senador (Brasil e favoritos).
+  Para deputados, manda um resumo a cada 10 minutos (`RESUMO_MIN` em `public/app.js`). Funciona com o site aberto.
 - Atualização: a cada 60 s antes das 17h (Brasília) e a cada 30 s depois.
 
 ## Testar no computador
