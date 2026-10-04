@@ -20,7 +20,10 @@ export default async (req) => {
     }));
     return { id, nome: await nomeLocal(local), cargos };
   }));
-  return resposta({ locais: locais.filter(Boolean) });
+  const ok = locais.filter(Boolean);
+  // se algum cargo falhou, não guarda a resposta em cache (a próxima busca tenta de novo)
+  const falhou = ok.some((l) => l.cargos.some((c) => c.erro));
+  return falhou ? resposta({ locais: ok }, 200, "no-store", null) : resposta({ locais: ok });
 };
 
 export const config = { path: "/api/painel" };

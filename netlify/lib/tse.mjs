@@ -39,9 +39,18 @@ export function urlArquivo({ uf, mun }, cargo) {
 }
 
 export async function buscarCargo(local, cargo) {
-  const r = await fetch(urlArquivo(local, cargo), { headers: UA });
-  if (!r.ok) throw new Error(`TSE ${r.status}`);
-  const raw = await r.json();
+  // uma segunda tentativa cobre falhas passageiras do TSE
+  let raw;
+  for (let tentativa = 0; ; tentativa++) {
+    try {
+      const r = await fetch(urlArquivo(local, cargo), { headers: UA });
+      if (!r.ok) throw new Error(`TSE ${r.status}`);
+      raw = await r.json();
+      break;
+    } catch (e) {
+      if (tentativa >= 1) throw e;
+    }
+  }
   const carg = raw.carg?.[0];
   if (!carg) throw new Error("resposta inesperada");
 

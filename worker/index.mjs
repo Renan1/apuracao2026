@@ -31,7 +31,7 @@ export default {
     const res = await fn(req);
     const corpo = await res.text();
     const item = { t: agora, status: res.status, tipo: res.headers.get("content-type"), corpo };
-    if (res.ok) {
+    if (res.ok && res.headers.get("cache-control") !== "no-store") {
       memoria.set(chave, item);
       if (memoria.size > 200) memoria.delete(memoria.keys().next().value);
       const r = resposta(item);
