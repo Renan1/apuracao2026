@@ -109,3 +109,10 @@ h2.sec:first-child{margin-top:4px}
 .chips button.on{background:var(--pri);border-color:var(--pri);color:#fff}
 .favbtn{width:100%;padding:11px;border:1px solid var(--pri);border-radius:10px;background:#fff;color:var(--pri);font:inherit;font-weight:800;font-size:14px;cursor:pointer}
 .favbtn.on{background:var(--pri);color:#fff}
+
+.foto{width:46px;height:46px;border-radius:50%;object-fit:cover;object-position:center top;background:var(--soft);border:2px solid #fff;box-shadow:0 0 0 1px var(--bd)}
+.foto.peq{width:36px;height:36px;flex:none}
+.cand{grid-template-columns:46px 1fr auto}
+.cand.lider1 .foto{box-shadow:0 0 0 3px var(--ouro)}
+.lq{align-items:center;gap:10px}
+.lq .nm{flex:1;min-width:0}

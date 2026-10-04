@@ -22,6 +22,11 @@ const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } 
 const ler = (k, pad) => { try { return JSON.parse(localStorage.getItem(k)) ?? pad; } catch { return pad; } };
 const ufDe = (id) => id.split(":")[0];
 
+// Foto oficial do candidato (hospedada pelo TSE). Presidente fica na pasta "br"; os demais, na do estado.
+const SEM_FOTO = "this.onerror=null;this.src='/icons/sem-foto.svg'";
+const foto = (cargo, uf, sq, cls = "") =>
+  `<img class="foto ${cls}" loading="lazy" alt="" onerror="${SEM_FOTO}" src="https://resultados.tse.jus.br/oficial/ele2026/${cargo === "1" ? "6257" : "6259"}/fotos/${cargo === "1" ? "br" : uf}/${sq}.jpeg">`;
+
 let aba = "inicio", restante = 0, ultimaOk = null, buscando = false, limite = PASSO;
 let favoritos = ler("favoritos2", FAV_PADRAO);
 let avisos = ler("avisos", false);
@@ -164,12 +169,12 @@ function alternarFavorito(id, nome) {
 // ---------- desenho ----------
 const barra = (p) => `<div class="bar"><i style="width:${p}%"></i></div>`;
 
-function linhasTop(c, n) {
+function linhasTop(c, n, uf) {
   const maior = c.top[0]?.votos || 1;
   return c.top.slice(0, n).map((x, i) => `
-    <div class="cand compacto${x.eleito ? " eleito" : ""}">
+    <div class="cand compacto${x.eleito ? " eleito" : ""}${i === 0 && x.votos > 0 ? " lider1" : ""}">
       <i class="fill" style="width:${Math.round((x.votos / maior) * 100)}%"></i>
-      <div class="pos">${i + 1}</div>
+      ${foto(c.cargo, uf, x.sq)}
       <div><div class="nome">${esc(x.nome)}${x.eleito ? '<span class="tag">ELEITO</span>' : ""}</div><div class="sub"><b>${esc(x.n)}</b> · ${esc(x.partido)}</div></div>
       <div class="votos">${fmt(x.votos)}<small>${pct(x.pct)}</small></div>
     </div>`).join("");
@@ -183,7 +188,7 @@ function inicio() {
       <div class="meta"><span><b>${String(br.secoes.pct).replace(".", ",")}%</b> das seções apuradas</span><span>${fmt(br.secoes.apuradas)} de ${fmt(br.secoes.total)}</span></div>
       ${barra(br.secoes.pct)}
       ${br.top[0]?.votos > 0 ? "" : '<div class="aviso">A apuração ainda não começou. Os candidatos aparecem abaixo.</div>'}
-    </div>${linhasTop(br, 4)}`;
+    </div>${linhasTop(br, 4, "br")}`;
   } else h += '<div class="msg">Carregando…</div>';
 
   h += `<h2 class="sec">⭐ Favoritos <small>quem está na frente em cada lugar</small></h2>`;
@@ -210,7 +215,7 @@ function inicio() {
       const tops = lideres(c), tem = tops[0]?.votos > 0, seg = c.top[tops.length];
       h += `<button class="lr" data-go="${esc(f.id)}|${cg}">
         <div class="lc">${CARGO[cg]}</div>
-        ${tem ? tops.map((x) => `<div class="lq"><span class="nm">${esc(x.nome)} <em>${esc(x.partido)}</em></span><span class="vt">${fmt(x.votos)} <small>${pct(x.pct)}</small></span></div>`).join("") +
+        ${tem ? tops.map((x) => `<div class="lq">${foto(cg, ufDe(f.id), x.sq, "peq")}<span class="nm">${esc(x.nome)} <em>${esc(x.partido)}</em></span><span class="vt">${fmt(x.votos)} <small>${pct(x.pct)}</small></span></div>`).join("") +
           (seg ? `<div class="seg">2º: ${esc(seg.nome)} · ${fmt(seg.votos)}</div>` : "")
           : `<div class="lq sem">aguardando apuração</div>`}
       </button>`;
@@ -264,9 +269,9 @@ function rank() {
   const lista = d.candidatos.map((c, i) => ({ ...c, pos: i + 1 }))
     .filter((c) => !t || c.nome.toLowerCase().includes(t) || String(c.n).startsWith(t) || c.partido.toLowerCase().includes(t));
   $("rank").innerHTML = lista.slice(0, limite).map((c) => `
-    <div class="cand${c.eleito ? " eleito" : ""}">
+    <div class="cand${c.eleito ? " eleito" : ""}${c.pos === 1 && c.votos > 0 ? " lider1" : ""}">
       <i class="fill" style="width:${Math.round((c.votos / maior) * 100)}%"></i>
-      <div class="pos">${c.pos}</div>
+      ${foto(exp.cargo, exp.uf, c.sq)}
       <div><div class="nome">${esc(c.nome)}${c.eleito ? '<span class="tag">ELEITO</span>' : ""}</div>
       <div class="sub"><b>${esc(c.n)}</b> · ${esc(c.partido)}${c.vice.length ? " · Vice/Supl.: " + esc(c.vice.join(", ")) : ""}</div></div>
       <div class="votos">${fmt(c.votos)}<small>${pct(c.pct)}</small></div>

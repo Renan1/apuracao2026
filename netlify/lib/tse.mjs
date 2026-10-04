@@ -48,6 +48,7 @@ export async function buscarCargo(local, cargo) {
       for (const c of par.cand || []) {
         candidatos.push({
           n: c.n,
+          sq: c.sqcand,
           nome: c.nmu || c.nm,
           partido: par.sg,
           votos: num(c.vap),
