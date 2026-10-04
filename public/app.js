@@ -176,7 +176,7 @@ function linhasTop(c, n, uf) {
       <i class="fill" style="width:${Math.round((x.votos / maior) * 100)}%"></i>
       ${foto(c.cargo, uf, x.sq)}
       <div><div class="nome">${esc(x.nome)}${x.eleito ? '<span class="tag">ELEITO</span>' : ""}</div><div class="sub"><b>${esc(x.n)}</b> · ${esc(x.partido)}</div></div>
-      <div class="votos">${fmt(x.votos)}<small>${pct(x.pct)}</small></div>
+      <div class="votos">${pct(x.pct)}<small>${fmt(x.votos)} votos</small></div>
     </div>`).join("");
 }
 
@@ -214,8 +214,8 @@ function inicio() {
       if (!c) { h += `<div class="lr off"><div class="lc">${CARGO[cg]}</div><div class="lq">indisponível</div></div>`; continue; }
       const tops = lideres(c), tem = tops[0]?.votos > 0, seg = c.top[tops.length];
       h += `<button class="lr" data-go="${esc(f.id)}|${cg}">
-        <div class="lc">${CARGO[cg]}</div>
-        ${tem ? tops.map((x) => `<div class="lq">${foto(cg, ufDe(f.id), x.sq, "peq")}<span class="nm">${esc(x.nome)} <em>${esc(x.partido)}</em></span><span class="vt">${fmt(x.votos)} <small>${pct(x.pct)}</small></span></div>`).join("") +
+        <div class="lc">${CARGO[cg]}<span>${String(c.secoes.pct).replace(".", ",")}% das seções apuradas</span></div>
+        ${tem ? tops.map((x) => `<div class="lq">${foto(cg, ufDe(f.id), x.sq, "peq")}<span class="nm">${esc(x.nome)} <em>${esc(x.partido)}</em></span><span class="vt">${pct(x.pct)}<small>${fmt(x.votos)} votos</small></span></div>`).join("") +
           (seg ? `<div class="seg">2º: ${esc(seg.nome)} · ${fmt(seg.votos)}</div>` : "")
           : `<div class="lq sem">aguardando apuração</div>`}
       </button>`;
@@ -274,7 +274,7 @@ function rank() {
       ${foto(exp.cargo, exp.uf, c.sq)}
       <div><div class="nome">${esc(c.nome)}${c.eleito ? '<span class="tag">ELEITO</span>' : ""}</div>
       <div class="sub"><b>${esc(c.n)}</b> · ${esc(c.partido)}${c.vice.length ? " · Vice/Supl.: " + esc(c.vice.join(", ")) : ""}</div></div>
-      <div class="votos">${fmt(c.votos)}<small>${pct(c.pct)}</small></div>
+      <div class="votos">${pct(c.pct)}<small>${fmt(c.votos)} votos</small></div>
     </div>`).join("") || '<div class="msg">Nenhum candidato encontrado.</div>';
   if (lista.length > limite) $("rank").innerHTML += `<button class="mais" id="mais">Ver mais (${lista.length - limite})</button>`;
 }
