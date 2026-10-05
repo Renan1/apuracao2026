@@ -478,14 +478,13 @@ $("view").addEventListener("input", (e) => {
 });
 
 // ---------- relógio ----------
-// Apuração encerrada: sem busca automática. Só uma leitura ao abrir e a opção manual "atualizar agora".
+// Apuração encerrada: sem busca automática. Só uma leitura ao abrir.
 function mostrarStatus() {
   $("status").innerHTML = ultimaOk
-    ? `<b>●</b> Apuração encerrada · dados lidos às ${ultimaOk.toLocaleTimeString("pt-BR")} · <a href="#" id="agora">atualizar agora</a>`
+    ? `<b>●</b> Apuração encerrada · dados lidos às ${ultimaOk.toLocaleTimeString("pt-BR")}`
     : "Conectando ao TSE…";
 }
 setInterval(mostrarStatus, 1000);
-$("status").addEventListener("click", (e) => { if (e.target.id === "agora") { e.preventDefault(); atualizar(); } });
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 pintarSino();

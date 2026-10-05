@@ -139,13 +139,12 @@ export async function nomeLocal({ uf, mun }) {
   return `${mun} - ${uf.toUpperCase()}`;
 }
 
-// Antes das 16:59 (Brasília) de 04/10/2026 ainda não há votos: o cache do servidor dura bem mais.
-export const ABERTURA = Date.parse("2026-10-04T16:59:00-03:00");
-// (o cache nunca passa das 16:59, para a primeira leitura da apuração já vir fresca)
-export const ttlSeg = () => (Date.now() < ABERTURA ? Math.max(1, Math.min(600, Math.floor((ABERTURA - Date.now()) / 1000))) : 55);
-const cdnPadrao = () => (Date.now() < ABERTURA ? `public, s-maxage=${ttlSeg()}` : "public, s-maxage=55, stale-while-revalidate=60");
+// Apuração do 1º turno encerrada: o resultado não muda mais, então as respostas ficam guardadas por 7 dias
+// (o TSE é consultado uma única vez por tela/cidade). Respostas com erro nunca vão para o cache.
+export const ttlSeg = () => 7 * 24 * 3600;
+const cdnPadrao = () => `public, s-maxage=${ttlSeg()}`;
 
-export const resposta = (corpo, status = 200, cache = "public, max-age=10", cdn = cdnPadrao()) =>
+export const resposta = (corpo, status = 200, cache = "public, max-age=3600", cdn = cdnPadrao()) =>
   new Response(JSON.stringify(corpo), {
     status,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": cache, ...(cdn ? { "netlify-cdn-cache-control": cdn } : {}) },
