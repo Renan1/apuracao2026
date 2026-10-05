@@ -56,9 +56,10 @@ export async function buscarCargo(local, cargo) {
 
   const candidatos = [];
   for (const agr of carg.agr || []) {
+    const doAgr = [];
     for (const par of agr.par || []) {
       for (const c of par.cand || []) {
-        candidatos.push({
+        doAgr.push({
           n: c.n,
           sq: c.sqcand,
           nome: c.nmu || c.nm,
@@ -71,6 +72,14 @@ export async function buscarCargo(local, cargo) {
         });
       }
     }
+    // Deputados: o TSE publica as vagas de cada partido/federação (agr.vag) mas ainda não marca os candidatos.
+    // Eleitos = os mais votados de cada partido/federação, até o número de vagas que o TSE atribuiu.
+    const vagas = num(agr.vag);
+    if (vagas > 0 && !doAgr.some((c) => c.eleito)) {
+      doAgr.sort((a, b) => b.votos - a.votos);
+      doAgr.slice(0, vagas).forEach((c) => { c.eleito = true; c.calculado = true; c.situacao = "Eleito"; });
+    }
+    candidatos.push(...doAgr);
   }
   // Desempate (principalmente antes da apuração, com todos em zero): partidos maiores primeiro, depois ordem alfabética.
   const prio = (c) => { const i = PARTIDOS_PRIMEIRO.indexOf(String(c.n).slice(0, 2)); return i < 0 ? 99 : i; };

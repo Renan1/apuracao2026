@@ -378,7 +378,7 @@ async function carregarEleitos(silencioso) {
 function eleitos() {
   let h = `<div class="box filtros"><label>Estado
     <select id="fEleiUf">${Object.entries(UFS).map(([k, v]) => `<option value="${k}"${elei.uf === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
-    <div class="meta">Lista oficial do TSE: só entra quem o TSE já marcou como eleito. Atualiza sozinha conforme a apuração.</div></div>`;
+    <div class="meta">Apuração encerrada. Presidente, governadores e senadores vêm marcados pelo TSE. Deputados: o TSE publica as vagas de cada partido/federação, e os eleitos são os mais votados dentro delas.</div></div>`;
   if (!eleiDados) return ($("view").innerHTML = h + '<div class="msg">Carregando…</div>');
 
   for (const cg of cargosDe(elei.uf)) {
@@ -478,30 +478,14 @@ $("view").addEventListener("input", (e) => {
 });
 
 // ---------- relógio ----------
-// A apuração começa às 17h (Brasília). Antes das 16:59 o site lê os dados uma vez ao abrir
-// (para mostrar os candidatos) e só passa a buscar sozinho a partir das 16:59, economizando requisições.
-const ABERTURA = Date.parse("2026-10-04T16:59:00-03:00");
-const aberta = () => Date.now() >= ABERTURA;
-const hms = (ms) => {
-  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-  return `${h ? h + "h " : ""}${String(m).padStart(2, "0")}min ${String(s % 60).padStart(2, "0")}s`;
-};
-let jaAbriu = aberta();
-setInterval(() => {
-  if (!aberta()) {
-    $("status").innerHTML = `⏳ Atualização automática a partir das 16:59 (faltam ${hms(ABERTURA - Date.now())})` +
-      (ultimaOk ? ` · última leitura ${ultimaOk.toLocaleTimeString("pt-BR")}` : "") + ' · <a href="#" id="agora">atualizar agora</a>';
-    return;
-  }
-  if (!jaAbriu) { jaAbriu = true; restante = 0; }
-  restante = Math.max(0, restante - 1);
+// Apuração encerrada: sem busca automática. Só uma leitura ao abrir e a opção manual "atualizar agora".
+function mostrarStatus() {
   $("status").innerHTML = ultimaOk
-    ? `<b>●</b> Atualizado às ${ultimaOk.toLocaleTimeString("pt-BR")} · próxima em ${restante}s`
+    ? `<b>●</b> Apuração encerrada · dados lidos às ${ultimaOk.toLocaleTimeString("pt-BR")} · <a href="#" id="agora">atualizar agora</a>`
     : "Conectando ao TSE…";
-  if (restante === 0 && !buscando) atualizar();
-}, 1000);
+}
+setInterval(mostrarStatus, 1000);
 $("status").addEventListener("click", (e) => { if (e.target.id === "agora") { e.preventDefault(); atualizar(); } });
-document.addEventListener("visibilitychange", () => { if (!document.hidden && (aberta() || !ultimaOk)) atualizar(); });
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 pintarSino();
